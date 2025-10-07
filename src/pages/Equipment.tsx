@@ -22,7 +22,7 @@ const equipmentData = [
   {
     name: 'Tractor',
     image: tractorImg,
-    price: '₹1,500',
+    price: '₹3,500',
     description: 'Heavy-duty tractor for plowing and field preparation',
     availableSlots: ['6:00 AM - 12:00 PM', '2:00 PM - 6:00 PM', 'Tomorrow 8:00 AM'],
     location: 'Bangalore, Karnataka',

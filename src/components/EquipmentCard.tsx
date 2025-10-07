@@ -76,7 +76,7 @@ export function EquipmentCard({ name, image, price, availableSlots, description,
           <CardTitle className="text-lg">{name}</CardTitle>
           <Badge variant="secondary" className="text-primary font-semibold">
             <DollarSign className="h-3 w-3 mr-1" />
-            {price}/day
+            {price}{name === 'Harvester' ? '/hour' : '/day'}
           </Badge>
         </div>
         <CardDescription className="text-sm">{description}</CardDescription>
