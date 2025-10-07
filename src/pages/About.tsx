@@ -22,13 +22,6 @@ const values = [
   }
 ];
 
-const impact = [
-  { number: '1000+', label: 'Farmers Connected' },
-  { number: '500+', label: 'Equipment Listed' },
-  { number: '50+', label: 'Villages Served' },
-  { number: '₹10L+', label: 'Savings Generated' }
-];
-
 export default function About() {
   return (
     <div className="min-h-screen bg-background">
@@ -108,26 +101,6 @@ export default function About() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-base">{value.description}</CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Our Impact</h2>
-            <p className="text-muted-foreground text-lg">Making a difference in farming communities</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {impact.map((stat, index) => (
-              <Card key={index} className="text-center shadow-soft hover:shadow-medium transition-all duration-300 animate-slide-in">
-                <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-primary mb-2">{stat.number}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
                 </CardContent>
               </Card>
             ))}

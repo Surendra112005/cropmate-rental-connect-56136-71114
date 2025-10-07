@@ -146,50 +146,99 @@ const CustomerData = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Registered Customers</CardTitle>
-            <CardDescription>
-              Total customers: {profiles.length}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Full Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Registered Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {profiles.length === 0 ? (
+        <div className="grid grid-cols-1 gap-8">
+          {/* Providers Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Providers</CardTitle>
+              <CardDescription>
+                Equipment providers and owners
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
-                        No customers registered yet
-                      </TableCell>
+                      <TableHead>Full Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Registered Date</TableHead>
                     </TableRow>
-                  ) : (
-                    profiles.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-medium">
-                          {profile.full_name || 'N/A'}
-                        </TableCell>
-                        <TableCell>{profile.email || 'N/A'}</TableCell>
-                        <TableCell>{profile.phone || 'N/A'}</TableCell>
-                        <TableCell>
-                          {new Date(profile.created_at).toLocaleDateString()}
+                  </TableHeader>
+                  <TableBody>
+                    {profiles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No providers registered yet
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : (
+                      profiles.map((profile) => (
+                        <TableRow key={profile.id}>
+                          <TableCell className="font-medium">
+                            {profile.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{profile.email || 'N/A'}</TableCell>
+                          <TableCell>{profile.phone || 'N/A'}</TableCell>
+                          <TableCell>
+                            {new Date(profile.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Customers Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Customers</CardTitle>
+              <CardDescription>
+                Equipment renters and users
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Full Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Registered Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profiles.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No customers registered yet
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      profiles.map((profile) => (
+                        <TableRow key={profile.id}>
+                          <TableCell className="font-medium">
+                            {profile.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{profile.email || 'N/A'}</TableCell>
+                          <TableCell>{profile.phone || 'N/A'}</TableCell>
+                          <TableCell>
+                            {new Date(profile.created_at).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

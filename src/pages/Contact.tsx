@@ -11,14 +11,14 @@ const contactMethods = [
     icon: Phone,
     title: 'Phone Support',
     description: 'Call us for immediate assistance',
-    details: '+91 98765 43210',
+    details: '8792153536',
     availability: 'Mon-Sat, 9 AM - 6 PM'
   },
   {
     icon: Mail,
     title: 'Email Support',
     description: 'Send us your questions',
-    details: 'support@cropmate.com',
+    details: 'surendravarman77041@mail.com',
     availability: 'We respond within 24 hours'
   },
   {
