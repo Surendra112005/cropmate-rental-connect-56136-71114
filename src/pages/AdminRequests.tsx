@@ -30,6 +30,7 @@ export default function AdminRequests() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
+  const [totalUsers, setTotalUsers] = useState(0);
 
   useEffect(() => {
     checkAdminAndFetchRequests();
@@ -51,7 +52,7 @@ export default function AdminRequests() {
         .eq('user_id', user.id)
         .single();
 
-      if (profile?.email !== 'admin@example.com') {
+      if (profile?.email !== 'admin@cropmate.com') {
         toast({
           title: "Access Denied",
           description: "You don't have permission to access this page.",
@@ -70,6 +71,14 @@ export default function AdminRequests() {
 
   const fetchRequests = async () => {
     try {
+      // Fetch total users count
+      const { count: usersCount, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) throw countError;
+      setTotalUsers(usersCount || 0);
+
       const { data: requestsData, error: requestsError } = await supabase
         .from('rental_requests')
         .select('*')
@@ -179,8 +188,32 @@ export default function AdminRequests() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-4xl font-bold">Rental Requests Management</h1>
+          <h1 className="text-4xl font-bold">Admin Portal</h1>
         </div>
+
+        {/* Dashboard Statistics */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dashboard Overview</CardTitle>
+            <CardDescription>System statistics and metrics</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Users</p>
+                <p className="text-3xl font-bold">{totalUsers}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Pending Requests</p>
+                <p className="text-3xl font-bold">{pendingRequests.length}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Total Requests</p>
+                <p className="text-3xl font-bold">{requests.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Pending Requests */}
         <Card>

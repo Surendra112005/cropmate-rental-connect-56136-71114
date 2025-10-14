@@ -33,6 +33,27 @@ export default function Profile() {
 
   useEffect(() => {
     checkAuthAndFetchData();
+
+    // Subscribe to real-time updates for rental requests
+    const channel = supabase
+      .channel('rental-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rental_requests',
+        },
+        () => {
+          // Refresh data when rental requests are updated
+          checkAuthAndFetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const checkAuthAndFetchData = async () => {
