@@ -70,6 +70,7 @@ function getTranslations(language: LanguageCode): Record<string, string> {
       'nav.equipment': 'Equipment',
       'nav.about': 'About',
       'nav.providers': 'Providers',
+      'nav.customers': 'Customers',
       'nav.contact': 'Contact',
       
       // Language Selector
@@ -135,6 +136,7 @@ function getTranslations(language: LanguageCode): Record<string, string> {
       'nav.equipment': 'ಯಂತ್ರೋಪಕರಣಗಳು',
       'nav.about': 'ನಮ್ಮ ಬಗ್ಗೆ',
       'nav.providers': 'ಪೂರೈಕೆದಾರರು',
+      'nav.customers': 'ಗ್ರಾಹಕರು',
       'nav.contact': 'ಸಂಪರ್ಕ',
       
       // Language Selector
@@ -200,6 +202,7 @@ function getTranslations(language: LanguageCode): Record<string, string> {
       'nav.equipment': 'పరికరాలు',
       'nav.about': 'మా గురించి',
       'nav.providers': 'ప్రొవైడర్లు',
+      'nav.customers': 'కస్టమర్లు',
       'nav.contact': 'సంప్రదింపులు',
       
       // Language Selector
@@ -265,6 +268,7 @@ function getTranslations(language: LanguageCode): Record<string, string> {
       'nav.equipment': 'उपकरण',
       'nav.about': 'हमारे बारे में',
       'nav.providers': 'प्रदाता',
+      'nav.customers': 'ग्राहक',
       'nav.contact': 'संपर्क',
       
       // Language Selector
@@ -330,6 +334,7 @@ function getTranslations(language: LanguageCode): Record<string, string> {
       'nav.equipment': 'கருவிகள்',
       'nav.about': 'எங்களைப் பற்றி',
       'nav.providers': 'வழங்குநர்கள்',
+      'nav.customers': 'வாடிக்கையாளர்கள்',
       'nav.contact': 'தொடர்பு',
       
       // Language Selector
