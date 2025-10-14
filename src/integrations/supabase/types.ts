@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      equipment: {
+        Row: {
+          available_slots: number
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          available_slots?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          available_slots?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rental_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          equipment_name: string
+          equipment_price: number
+          id: string
+          request_date: string
+          response_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          equipment_name: string
+          equipment_price: number
+          id?: string
+          request_date?: string
+          response_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          equipment_name?: string
+          equipment_price?: number
+          id?: string
+          request_date?: string
+          response_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
