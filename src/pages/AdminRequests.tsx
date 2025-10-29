@@ -24,13 +24,37 @@ interface RentalRequest {
   };
 }
 
+interface ProviderRequest {
+  id: string;
+  user_id: string;
+  company_name: string;
+  equipment_types: string[];
+  contact_phone: string | null;
+  contact_email: string | null;
+  business_address: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  response_date: string | null;
+  admin_notes: string | null;
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+  };
+}
+
+type CombinedRequest = (RentalRequest | ProviderRequest) & {
+  requestType: 'rental' | 'provider';
+};
+
 export default function AdminRequests() {
   const navigate = useNavigate();
-  const [requests, setRequests] = useState<RentalRequest[]>([]);
+  const [requests, setRequests] = useState<CombinedRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
   const [totalUsers, setTotalUsers] = useState(0);
+  const [filter, setFilter] = useState<'all' | 'rental' | 'provider'>('all');
 
   useEffect(() => {
     checkAdminAndFetchRequests();
@@ -79,16 +103,25 @@ export default function AdminRequests() {
       if (countError) throw countError;
       setTotalUsers(usersCount || 0);
 
-      const { data: requestsData, error: requestsError } = await supabase
+      // Fetch rental requests
+      const { data: rentalData, error: rentalError } = await supabase
         .from('rental_requests')
         .select('*')
         .order('request_date', { ascending: false });
 
-      if (requestsError) throw requestsError;
+      if (rentalError) throw rentalError;
 
-      // Fetch profiles for each request
-      const enrichedRequests = await Promise.all(
-        (requestsData || []).map(async (request) => {
+      // Fetch provider requests
+      const { data: providerData, error: providerError } = await supabase
+        .from('providers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (providerError) throw providerError;
+
+      // Enrich rental requests with profile data
+      const enrichedRentalRequests = await Promise.all(
+        (rentalData || []).map(async (request) => {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('full_name, email')
@@ -97,17 +130,42 @@ export default function AdminRequests() {
 
           return {
             ...request,
-            profiles: profileData || { full_name: null, email: null }
+            profiles: profileData || { full_name: null, email: null },
+            requestType: 'rental' as const
           };
         })
       );
 
-      setRequests(enrichedRequests);
+      // Enrich provider requests with profile data
+      const enrichedProviderRequests = await Promise.all(
+        (providerData || []).map(async (request) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('user_id', request.user_id)
+            .single();
+
+          return {
+            ...request,
+            profiles: profileData || { full_name: null, email: null },
+            requestType: 'provider' as const
+          };
+        })
+      );
+
+      // Combine and sort by date
+      const allRequests: CombinedRequest[] = [...enrichedRentalRequests, ...enrichedProviderRequests].sort((a, b) => {
+        const dateA = 'request_date' in a ? a.request_date : a.created_at;
+        const dateB = 'request_date' in b ? b.request_date : b.created_at;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      }) as CombinedRequest[];
+
+      setRequests(allRequests);
     } catch (error) {
       console.error('Error fetching requests:', error);
       toast({
         title: "Error",
-        description: "Failed to load rental requests.",
+        description: "Failed to load requests.",
         variant: "destructive"
       });
     } finally {
@@ -115,23 +173,24 @@ export default function AdminRequests() {
     }
   };
 
-  const handleUpdateStatus = async (requestId: string, newStatus: 'approved' | 'rejected') => {
-    setProcessingId(requestId);
+  const handleUpdateStatus = async (request: CombinedRequest, newStatus: 'approved' | 'rejected') => {
+    setProcessingId(request.id);
     try {
-      const { error } = await supabase
-        .from('rental_requests')
-        .update({
+      // Call edge function to update status and send email
+      const { data, error } = await supabase.functions.invoke('handle-request-decision', {
+        body: {
+          requestId: request.id,
+          requestType: request.requestType,
           status: newStatus,
-          response_date: new Date().toISOString(),
-          admin_notes: adminNotes[requestId] || null
-        })
-        .eq('id', requestId);
+          adminNotes: adminNotes[request.id] || null
+        }
+      });
 
       if (error) throw error;
 
       toast({
-        title: "Status Updated",
-        description: `Request has been ${newStatus}.`,
+        title: "Success",
+        description: `Request has been ${newStatus}. Email notification sent.`,
       });
 
       // Refresh requests
@@ -140,7 +199,7 @@ export default function AdminRequests() {
       // Clear the notes for this request
       setAdminNotes(prev => {
         const newNotes = { ...prev };
-        delete newNotes[requestId];
+        delete newNotes[request.id];
         return newNotes;
       });
     } catch (error) {
@@ -166,8 +225,11 @@ export default function AdminRequests() {
     }
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
-  const processedRequests = requests.filter(r => r.status !== 'pending');
+  const filteredRequests = requests.filter(r => 
+    filter === 'all' ? true : r.requestType === filter
+  );
+  const pendingRequests = filteredRequests.filter(r => r.status === 'pending');
+  const processedRequests = filteredRequests.filter(r => r.status !== 'pending');
 
   if (loading) {
     return (
@@ -215,6 +277,28 @@ export default function AdminRequests() {
           </CardContent>
         </Card>
 
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            onClick={() => setFilter('all')}
+          >
+            All Requests
+          </Button>
+          <Button
+            variant={filter === 'rental' ? 'default' : 'outline'}
+            onClick={() => setFilter('rental')}
+          >
+            Rental Requests
+          </Button>
+          <Button
+            variant={filter === 'provider' ? 'default' : 'outline'}
+            onClick={() => setFilter('provider')}
+          >
+            Provider Requests
+          </Button>
+        </div>
+
         {/* Pending Requests */}
         <Card>
           <CardHeader>
@@ -222,7 +306,7 @@ export default function AdminRequests() {
               <Package className="h-5 w-5" />
               Pending Requests ({pendingRequests.length})
             </CardTitle>
-            <CardDescription>Review and approve or reject rental requests</CardDescription>
+            <CardDescription>Review and approve or reject {filter === 'all' ? 'all' : filter} requests</CardDescription>
           </CardHeader>
           <CardContent>
             {pendingRequests.length === 0 ? (
@@ -232,37 +316,68 @@ export default function AdminRequests() {
               </div>
             ) : (
               <div className="space-y-4">
-                {pendingRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="p-4 border rounded-lg space-y-4"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-semibold text-lg">{request.equipment_name}</h3>
-                          <Badge className={getStatusColor(request.status)}>
-                            {request.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <User className="h-4 w-4" />
-                            <span className="font-medium">Customer:</span> {request.profiles?.full_name || 'Unknown'}
+                {pendingRequests.map((request) => {
+                  const isRental = request.requestType === 'rental';
+                  const displayName = isRental 
+                    ? (request as RentalRequest).equipment_name 
+                    : (request as ProviderRequest).company_name;
+                  const requestDate = isRental 
+                    ? (request as RentalRequest).request_date 
+                    : (request as ProviderRequest).created_at;
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="p-4 border rounded-lg space-y-4"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Badge variant="outline" className="mr-2">
+                              {request.requestType.toUpperCase()}
+                            </Badge>
+                            <h3 className="font-semibold text-lg">{displayName}</h3>
+                            <Badge className={getStatusColor(request.status)}>
+                              {request.status.toUpperCase()}
+                            </Badge>
                           </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Mail className="h-4 w-4" />
-                            <span className="font-medium">Email:</span> {request.profiles?.email}
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              <span className="font-medium">{isRental ? 'Customer' : 'Provider'}:</span> {request.profiles?.full_name || 'Unknown'}
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Mail className="h-4 w-4" />
+                              <span className="font-medium">Email:</span> {request.profiles?.email}
+                            </div>
+                            {isRental && (
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">Price:</span> ${(request as RentalRequest).equipment_price}/day
+                              </p>
+                            )}
+                            {!isRental && (
+                              <>
+                                <p className="text-muted-foreground">
+                                  <span className="font-medium">Equipment Types:</span> {(request as ProviderRequest).equipment_types.join(', ')}
+                                </p>
+                                {(request as ProviderRequest).contact_phone && (
+                                  <p className="text-muted-foreground">
+                                    <span className="font-medium">Phone:</span> {(request as ProviderRequest).contact_phone}
+                                  </p>
+                                )}
+                                {(request as ProviderRequest).business_address && (
+                                  <p className="text-muted-foreground">
+                                    <span className="font-medium">Address:</span> {(request as ProviderRequest).business_address}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                            <p className="text-muted-foreground">
+                              <span className="font-medium">Requested:</span> {new Date(requestDate).toLocaleString()}
+                            </p>
                           </div>
-                          <p className="text-muted-foreground">
-                            <span className="font-medium">Price:</span> ${request.equipment_price}/day
-                          </p>
-                          <p className="text-muted-foreground">
-                            <span className="font-medium">Requested:</span> {new Date(request.request_date).toLocaleString()}
-                          </p>
                         </div>
                       </div>
-                    </div>
                     
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Admin Notes (Optional)</label>
@@ -277,28 +392,29 @@ export default function AdminRequests() {
                       />
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        onClick={() => handleUpdateStatus(request.id, 'approved')}
-                        disabled={processingId === request.id}
-                      >
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        className="flex-1"
-                        onClick={() => handleUpdateStatus(request.id, 'rejected')}
-                        disabled={processingId === request.id}
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reject
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={() => handleUpdateStatus(request, 'approved')}
+                          disabled={processingId === request.id}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => handleUpdateStatus(request, 'rejected')}
+                          disabled={processingId === request.id}
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Reject
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -317,33 +433,46 @@ export default function AdminRequests() {
               </div>
             ) : (
               <div className="space-y-3">
-                {processedRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold">{request.equipment_name}</h3>
-                        <Badge className={getStatusColor(request.status)}>
-                          {request.status.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <p>Customer: {request.profiles?.full_name || 'Unknown'} ({request.profiles?.email})</p>
-                        <p>Requested: {new Date(request.request_date).toLocaleDateString()}</p>
-                        {request.response_date && (
-                          <p>Responded: {new Date(request.response_date).toLocaleDateString()}</p>
-                        )}
-                        {request.admin_notes && (
-                          <p className="text-foreground mt-2">
-                            <span className="font-medium">Notes:</span> {request.admin_notes}
-                          </p>
-                        )}
+                {processedRequests.map((request) => {
+                  const isRental = request.requestType === 'rental';
+                  const displayName = isRental 
+                    ? (request as RentalRequest).equipment_name 
+                    : (request as ProviderRequest).company_name;
+                  const requestDate = isRental 
+                    ? (request as RentalRequest).request_date 
+                    : (request as ProviderRequest).created_at;
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Badge variant="outline" className="mr-2">
+                            {request.requestType.toUpperCase()}
+                          </Badge>
+                          <h3 className="font-semibold">{displayName}</h3>
+                          <Badge className={getStatusColor(request.status)}>
+                            {request.status.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p>{isRental ? 'Customer' : 'Provider'}: {request.profiles?.full_name || 'Unknown'} ({request.profiles?.email})</p>
+                          <p>Requested: {new Date(requestDate).toLocaleDateString()}</p>
+                          {request.response_date && (
+                            <p>Responded: {new Date(request.response_date).toLocaleDateString()}</p>
+                          )}
+                          {request.admin_notes && (
+                            <p className="text-foreground mt-2">
+                              <span className="font-medium">Notes:</span> {request.admin_notes}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

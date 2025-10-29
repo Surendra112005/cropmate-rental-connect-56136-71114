@@ -1,1 +1,4 @@
 project_id = "ryiuhvyyoxrexdgmrxpw"
+
+[functions.handle-request-decision]
+verify_jwt = true
